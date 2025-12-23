@@ -1,4 +1,6 @@
-# 📄 RAG Document Analyzer (CUAD)
+# Generative AI–Powered Intelligent Document Analyzer (RAG System)
+
+🔖 Stable Release: v1.0
 
 A Retrieval-Augmented Generation (RAG) system for intelligent contract question answering, built using FastAPI, FAISS, Sentence Transformers, and Large Language Models.
 
