@@ -1,6 +1,6 @@
 # Generative AI–Powered Intelligent Document Analyzer (RAG System)
 
-🔖 Stable Release: v1.0
+🔖 Stable Release: [v1.0](https://github.com/ansh90378/rag-document-analyzer/tree/v1.0)
 
 A Retrieval-Augmented Generation (RAG) system for intelligent contract question answering, built using FastAPI, FAISS, Sentence Transformers, and Large Language Models.
 
