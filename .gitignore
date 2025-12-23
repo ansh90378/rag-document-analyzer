@@ -1,0 +1,16 @@
+﻿# Python
+venv/
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# Data & embeddings
+data/
+*.faiss
+*.pkl
+
+# OS
+.DS_Store
