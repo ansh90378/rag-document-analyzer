@@ -2,15 +2,43 @@
 venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # Data & embeddings
 data/
 *.faiss
 *.pkl
+*.npy
+
+# Environment variables
+.env
+.env.local
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Test outputs and temporary files
+Output/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+Screenshot*.png
+
+# Logs
+*.log
+logs/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
