@@ -48,6 +48,7 @@ class Config:
     # LLM model
     LLM_MODEL: str = os.getenv("LLM_MODEL", "google/flan-t5-base")
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))
+    LLM_MAX_INPUT_TOKENS: int = int(os.getenv("LLM_MAX_INPUT_TOKENS", "512"))
     
     # API configuration
     ENABLE_CUAD_PRELOAD: bool = os.getenv("ENABLE_CUAD_PRELOAD", "true").lower() == "true"
