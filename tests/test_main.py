@@ -9,6 +9,9 @@ import pytest
 REPO_ROOT = str(Path(__file__).resolve().parents[1])
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from main import run_rag_pipeline
 
