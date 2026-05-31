@@ -33,6 +33,12 @@ def test_generate_answer_uses_seq2seq_generate(tokenizer_loader, model_loader):
         [{"text": "The notice period is 30 days."}],
     )
 
+    assert tokenizer_loader.call_args_list == [
+        call("test-model", local_files_only=True),
+    ]
+    assert model_loader.call_args_list == [
+        call("test-model", local_files_only=True),
+    ]
     tokenizer_loader.assert_called_once_with("test-model", local_files_only=True)
     model_loader.assert_called_once_with("test-model", local_files_only=True)
     tokenizer_loader.assert_called_once_with("test-model")

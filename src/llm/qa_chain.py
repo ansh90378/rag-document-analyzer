@@ -84,6 +84,32 @@ class RAGQAChain:
             if not context_tokens:
                 continue
 
+
+        for index, context in enumerate(contexts):
+            if remaining_tokens == 0:
+                break
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
             excerpt = self.tokenizer.decode(
                 context_tokens,
                 skip_special_tokens=True,

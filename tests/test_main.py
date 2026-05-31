@@ -101,3 +101,7 @@ def test_rebuild_embeddings_refreshes_saved_json_index(
     ingest_cuad_documents.assert_called_once_with()
     embedder.generate_embeddings.assert_called_once_with(documents)
     embedder.save_embeddings.assert_called_once()
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__]))
