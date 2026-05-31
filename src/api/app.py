@@ -54,7 +54,10 @@ def initialize_components():
             print(f"Warning: Failed to load existing embeddings: {e}")
     
     # Initialize QA chain
-    qa_chain = RAGQAChain()
+    qa_chain = RAGQAChain(
+        model_name=Config.LLM_MODEL,
+        max_tokens=Config.LLM_MAX_TOKENS
+    )
 
 
 def load_cuad_if_enabled():

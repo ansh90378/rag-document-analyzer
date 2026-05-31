@@ -6,5 +6,6 @@ pypdf
 fastapi
 uvicorn
 python-dotenv
+python-multipart
 pandas
 accelerate
