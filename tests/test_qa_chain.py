@@ -35,6 +35,8 @@ def test_generate_answer_uses_seq2seq_generate(tokenizer_loader, model_loader):
 
     tokenizer_loader.assert_called_once_with("test-model", local_files_only=True)
     model_loader.assert_called_once_with("test-model", local_files_only=True)
+    tokenizer_loader.assert_called_once_with("test-model")
+    model_loader.assert_called_once_with("test-model")
     prompt = tokenizer.call_args.args[0]
     assert "What is the notice period?" in prompt
     assert "The notice period is 30 days." in prompt
