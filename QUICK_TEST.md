@@ -96,5 +96,8 @@ python main.py --source pdf --pdf-path data/raw_docs/pdfs/your_file.pdf --query 
 ### API won't start
 - **Fix:** Check port 8000 is free, or use `--port 8001`
 
+### Hugging Face download or DNS error
+- **Fix:** The first run needs internet access to download the embedding and answer models. Later CLI runs and API startups load cached model files first and reuse saved JSON embeddings. If source documents changed, rerun the CLI with `--rebuild-embeddings` after restoring internet access.
+
 ### No answer generated
 - **Fix:** Check embeddings exist in `data/embeddings/`, may need to run CLI first
