@@ -378,6 +378,11 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 EMBEDDINGS_FILE=unified_embeddings.npy
 METADATA_FILE=unified_metadata.json
 
+# LLM
+LLM_MODEL=google/flan-t5-base
+LLM_MAX_TOKENS=256
+LLM_MAX_INPUT_TOKENS=512
+
 # API
 API_HOST=0.0.0.0
 API_PORT=8000
