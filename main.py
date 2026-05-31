@@ -123,7 +123,8 @@ def run_rag_pipeline(
     print("[5/6] Generating answer...")
     qa_chain = RAGQAChain(
         model_name=Config.LLM_MODEL,
-        max_tokens=Config.LLM_MAX_TOKENS
+        max_tokens=Config.LLM_MAX_TOKENS,
+        max_input_tokens=Config.LLM_MAX_INPUT_TOKENS
     )
     answer = qa_chain.generate_answer(query, retrieved_docs)
     
