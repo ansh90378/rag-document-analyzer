@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from src.llm.qa_chain import RAGQAChain
 
@@ -33,6 +33,8 @@ def test_generate_answer_uses_seq2seq_generate(tokenizer_loader, model_loader):
         [{"text": "The notice period is 30 days."}],
     )
 
+    tokenizer_loader.assert_called_once_with("test-model", local_files_only=True)
+    model_loader.assert_called_once_with("test-model", local_files_only=True)
     tokenizer_loader.assert_called_once_with("test-model")
     model_loader.assert_called_once_with("test-model")
     prompt = tokenizer.call_args.args[0]
@@ -89,3 +91,22 @@ def test_generate_answer_returns_not_found_without_retrieved_documents(
 
     assert qa_chain.generate_answer("What is the notice period?", []) == "Not found in document."
     qa_chain.model.generate.assert_not_called()
+
+
+@patch("src.llm.qa_chain.AutoModelForSeq2SeqLM.from_pretrained")
+@patch("src.llm.qa_chain.AutoTokenizer.from_pretrained")
+def test_answer_model_downloads_when_not_cached(tokenizer_loader, model_loader):
+    tokenizer = MagicMock()
+    model = MagicMock()
+    tokenizer_loader.side_effect = [OSError("not cached"), tokenizer]
+    model_loader.return_value = model
+
+    qa_chain = RAGQAChain(model_name="test-model")
+
+    assert tokenizer_loader.call_args_list == [
+        call("test-model", local_files_only=True),
+        call("test-model"),
+    ]
+    model_loader.assert_called_once_with("test-model")
+    assert qa_chain.tokenizer is tokenizer
+    assert qa_chain.model is model

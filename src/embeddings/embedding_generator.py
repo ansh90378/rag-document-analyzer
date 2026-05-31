@@ -8,10 +8,31 @@ from typing import List, Dict, Optional
 class EmbeddingGenerator:
     def __init__(
         self,
-        model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        prefer_local_files: bool = True,
     ):
-        self.model = SentenceTransformer(model_name)
+        self.model = self._load_model(model_name, prefer_local_files)
         self.embedding_dim = self.model.get_embedding_dimension()
+
+    @staticmethod
+    def _load_model(model_name: str, prefer_local_files: bool):
+        """Load cached model files before contacting Hugging Face when possible."""
+        if prefer_local_files:
+            try:
+                return SentenceTransformer(model_name, local_files_only=True)
+            except Exception:
+                # The first run still needs to download the model when it is not
+                # already available in the local Hugging Face cache.
+                pass
+
+        try:
+            return SentenceTransformer(model_name)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Unable to load embedding model '{model_name}'. "
+                "Check your internet connection for the first download, or ensure "
+                "the model is already present in the local Hugging Face cache."
+            ) from exc
 
     def generate_embeddings(self, documents: List[Dict]) -> np.ndarray:
         """
