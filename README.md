@@ -129,6 +129,9 @@ The first run generates and saves the CUAD embeddings. Later JSON-only queries a
 API startups reuse `data/embeddings/unified_embeddings.npy` and its metadata file
 instead of rebuilding the full index. Regenerate the index after changing the source
 documents with:
+The first run generates and saves the CUAD embeddings. Later JSON-only queries reuse
+`data/embeddings/unified_embeddings.npy` and its metadata file instead of rebuilding
+the full index. Regenerate the index after changing the source documents with:
 
 ```bash
 python main.py --source json --rebuild-embeddings --query "What are termination conditions?"

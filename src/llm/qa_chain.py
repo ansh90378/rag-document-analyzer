@@ -61,23 +61,22 @@ class RAGQAChain:
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
                     local_files_only=True,
-                    low_cpu_mem_usage=True,
                 )
                 return tokenizer, model
-            except Exception as exc:
-                if not cls._is_cache_miss(exc):
-                    cls._raise_load_error(model_name, exc)
+            except Exception:
                 # Allow the initial run to download files when they are not cached.
+                pass
 
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name,
-                low_cpu_mem_usage=True,
-            )
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name, low_cpu_mem_usage=True)
             return tokenizer, model
         except Exception as exc:
-            cls._raise_load_error(model_name, exc)
+            raise RuntimeError(
+                f"Unable to load answer model '{model_name}'. "
+                "Check your internet connection for the first download, or ensure "
+                "the model is already present in the local Hugging Face cache."
+            ) from exc
 
     def build_prompt(self, query: str, contexts: List[str]) -> str:
         prefix = (
@@ -93,6 +92,120 @@ class RAGQAChain:
         )
         remaining_tokens = max(self.max_input_tokens - len(scaffold_tokens), 0)
         context_excerpts = []
+
+        for index, context in enumerate(contexts):
+            if remaining_tokens == 0:
+                break
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
+            excerpt = self.tokenizer.decode(
+                context_tokens,
+                skip_special_tokens=True,
+            ).strip()
+            if not excerpt:
+                continue
+
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
+
+        for index, context in enumerate(contexts):
+            if remaining_tokens == 0:
+                break
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
+
+        for index, context in enumerate(contexts):
+            if remaining_tokens == 0:
+                break
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
+            excerpt = self.tokenizer.decode(
+                context_tokens,
+                skip_special_tokens=True,
+            ).strip()
+            if not excerpt:
+                continue
+
 
         for index, context in enumerate(contexts):
             if remaining_tokens == 0:
