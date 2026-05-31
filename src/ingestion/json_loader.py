@@ -25,14 +25,48 @@ def chunk_text(
     chunk_size: int = 800,
     overlap: int = 200
 ) -> List[str]:
+    """Split text quickly at natural boundaries while retaining useful overlap."""
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+    if overlap < 0 or overlap >= chunk_size:
+        raise ValueError("overlap must be non-negative and smaller than chunk_size")
+
+    text = text.strip()
+    if not text:
+        return []
+
     chunks = []
     start = 0
     length = len(text)
+    minimum_boundary = max(chunk_size // 2, overlap + 1)
+    separators = ("\n\n", "\n", ". ", "; ", ", ", " ")
 
     while start < length:
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += chunk_size - overlap
+        hard_end = min(start + chunk_size, length)
+        end = hard_end
+
+        if hard_end < length:
+            boundary_floor = min(start + minimum_boundary, hard_end)
+            for separator in separators:
+                boundary = text.rfind(separator, boundary_floor, hard_end)
+                if boundary != -1:
+                    end = boundary + len(separator)
+                    break
+
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        if end >= length:
+            break
+
+        # Keep context between chunks without emitting an overlap-only tail chunk.
+        # Rewind to a word boundary so the overlap remains readable.
+        next_start = max(end - overlap, start + 1)
+        whitespace = text.rfind(" ", start + 1, next_start + 1)
+        if whitespace != -1:
+            next_start = whitespace + 1
+        start = next_start
 
     return chunks
 

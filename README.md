@@ -364,7 +364,7 @@ Easily extensible for PDFs, multi-tenant search, or cloud deployment
 
 1. **Upload:** PDF file uploaded via API or placed in `data/raw_docs/pdfs/`
 2. **Extraction:** Text extracted from all pages using PyPDF
-3. **Chunking:** Text split into chunks (default: 800 chars with 200 char overlap)
+3. **Chunking:** Text split near paragraph, sentence, clause, or word boundaries (default: up to 800 chars with 200 char overlap)
 4. **Embedding:** Generate vector embeddings using Sentence Transformers
 5. **Indexing:** Add to FAISS vector store incrementally
 6. **Search:** Query across all documents (CUAD + PDFs)
