@@ -9,6 +9,9 @@ import pytest
 REPO_ROOT = str(Path(__file__).resolve().parents[1])
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from main import run_rag_pipeline
 
@@ -98,7 +101,3 @@ def test_rebuild_embeddings_refreshes_saved_json_index(
     ingest_cuad_documents.assert_called_once_with()
     embedder.generate_embeddings.assert_called_once_with(documents)
     embedder.save_embeddings.assert_called_once()
-
-
-if __name__ == "__main__":
-    raise SystemExit(pytest.main([__file__]))
