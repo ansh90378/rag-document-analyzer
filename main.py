@@ -21,7 +21,8 @@ def run_rag_pipeline(
     query: str,
     top_k: int = 4,
     source: str = "json",
-    pdf_path: Optional[str] = None
+    pdf_path: Optional[str] = None,
+    rebuild_embeddings: bool = False,
 ):
     """
     Run RAG pipeline with specified document source.
@@ -31,15 +32,27 @@ def run_rag_pipeline(
         top_k: Number of top results to retrieve
         source: Document source type ("json", "pdf", or "both")
         pdf_path: Path to PDF file or directory (required if source is "pdf")
+        rebuild_embeddings: Regenerate saved embeddings instead of reusing them
     """
     print(f"\n[INFO] Running RAG Pipeline (source: {source})")
     print(f"Query: {query}\n")
-    
-    # 1. Load documents
+
+    embeddings_path = Config.get_embeddings_path()
+    metadata_path = Config.get_metadata_path()
+    reuse_saved_embeddings = (
+        source == "json"
+        and not rebuild_embeddings
+        and embeddings_path.exists()
+        and metadata_path.exists()
+    )
+
+    # 1. Load documents unless a reusable JSON index is already available.
     print("[1/6] Loading documents...")
     documents = []
-    
-    if source in ["json", "both"]:
+
+    if reuse_saved_embeddings:
+        print("   [=] Reusing saved JSON embeddings; skipping document reload")
+    elif source in ["json", "both"]:
         try:
             cuad_docs = ingest_cuad_documents()
             documents.extend(cuad_docs)
@@ -75,36 +88,40 @@ def run_rag_pipeline(
             if source == "pdf":
                 raise
     
-    if not documents:
+    if not documents and not reuse_saved_embeddings:
         raise ValueError("No documents loaded. Cannot proceed.")
-    
-    print(f"   Total documents: {len(documents)}\n")
-    
-    # 2. Generate embeddings
-    print("[2/6] Generating embeddings...")
+
+    if documents:
+        print(f"   Total documents: {len(documents)}\n")
+    else:
+        print("   Documents will be read from saved metadata\n")
+
+    # 2. Initialize the embedding model and generate vectors only when needed.
+    print("[2/6] Preparing embeddings...")
     embedder = EmbeddingGenerator(model_name=Config.EMBEDDING_MODEL)
-    embeddings = embedder.generate_embeddings(documents)
-    
-    metadata = [
-        {**doc["metadata"], "text": doc["text"]}
-        for doc in documents
-    ]
-    
-    # Save embeddings
-    embedder.save_embeddings(
-        embeddings,
-        metadata,
-        output_dir=str(Config.EMBEDDINGS_DIR),
-        filename_prefix="unified"
-    )
-    print(f"   [+] Generated {embeddings.shape[0]} embeddings\n")
+
+    if reuse_saved_embeddings:
+        print(f"   [=] Using saved embeddings from {embeddings_path}\n")
+    else:
+        embeddings = embedder.generate_embeddings(documents)
+        metadata = [
+            {**doc["metadata"], "text": doc["text"]}
+            for doc in documents
+        ]
+        embedder.save_embeddings(
+            embeddings,
+            metadata,
+            output_dir=str(Config.EMBEDDINGS_DIR),
+            filename_prefix="unified"
+        )
+        print(f"   [+] Generated {embeddings.shape[0]} embeddings\n")
     
     # 3. Vector store
     print("[3/6] Initializing vector store...")
     vector_store = FAISSVectorStore(embedding_dim=Config.EMBEDDING_DIM)
     vector_store.load_embeddings(
-        embeddings_path=str(Config.get_embeddings_path()),
-        metadata_path=str(Config.get_metadata_path())
+        embeddings_path=str(embeddings_path),
+        metadata_path=str(metadata_path)
     )
     print(f"   [+] Loaded {vector_store.index.ntotal} vectors\n")
     
@@ -123,7 +140,8 @@ def run_rag_pipeline(
     print("[5/6] Generating answer...")
     qa_chain = RAGQAChain(
         model_name=Config.LLM_MODEL,
-        max_tokens=Config.LLM_MAX_TOKENS
+        max_tokens=Config.LLM_MAX_TOKENS,
+        max_input_tokens=Config.LLM_MAX_INPUT_TOKENS
     )
     answer = qa_chain.generate_answer(query, retrieved_docs)
     
@@ -176,6 +194,12 @@ Examples:
         default=4,
         help="Number of top results to retrieve (default: 4)"
     )
+
+    parser.add_argument(
+        "--rebuild-embeddings",
+        action="store_true",
+        help="Regenerate embeddings instead of reusing a saved JSON index"
+    )
     
     args = parser.parse_args()
     
@@ -194,7 +218,8 @@ Examples:
             query=args.query,
             top_k=args.top_k,
             source=args.source,
-            pdf_path=args.pdf_path
+            pdf_path=args.pdf_path,
+            rebuild_embeddings=args.rebuild_embeddings
         )
         
         # Print results

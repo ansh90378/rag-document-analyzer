@@ -56,14 +56,19 @@ def initialize_components():
     # Initialize QA chain
     qa_chain = RAGQAChain(
         model_name=Config.LLM_MODEL,
-        max_tokens=Config.LLM_MAX_TOKENS
+        max_tokens=Config.LLM_MAX_TOKENS,
+        max_input_tokens=Config.LLM_MAX_INPUT_TOKENS
     )
 
 
 def load_cuad_if_enabled():
-    """Load CUAD documents if enabled in config."""
+    """Load CUAD documents only when they are not already indexed."""
     if not Config.ENABLE_CUAD_PRELOAD:
         print("CUAD pre-loading is disabled. Skipping...")
+        return
+
+    if any(item.get("source") == "CUAD" for item in vector_store.metadata):
+        print("CUAD documents already exist in the loaded index. Skipping re-embedding...")
         return
     
     try:
