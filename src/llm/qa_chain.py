@@ -16,8 +16,42 @@ class RAGQAChain:
         self.max_input_tokens = max_input_tokens
 
     @staticmethod
-    def _load_model(model_name: str, prefer_local_files: bool):
-        """Load cached model files before contacting Hugging Face when possible."""
+    def _is_cache_miss(exc: Exception) -> bool:
+        """Return whether a local-only Hugging Face load failed due to missing files."""
+        message = str(exc).lower()
+        return any(
+            marker in message
+            for marker in (
+                "not cached",
+                "local cache",
+                "disk cache",
+                "local_files_only",
+                "couldn't find",
+                "cannot find the requested files",
+            )
+        )
+
+    @staticmethod
+    def _raise_load_error(model_name: str, exc: Exception):
+        """Raise an actionable error without hiding local resource failures."""
+        message = str(exc)
+        if "paging file is too small" in message.lower() or getattr(exc, "winerror", None) == 1455:
+            raise RuntimeError(
+                f"Unable to load answer model '{model_name}' because Windows virtual "
+                "memory is too low. Increase the Windows paging-file size, close "
+                "memory-heavy applications, or set LLM_MODEL=google/flan-t5-small "
+                "in your .env file. Original error: {message}"
+            ) from exc
+
+        raise RuntimeError(
+            f"Unable to load answer model '{model_name}'. Check your internet "
+            "connection for the first download, ensure the model is present in the "
+            f"local Hugging Face cache, and verify available memory. Original error: {message}"
+        ) from exc
+
+    @classmethod
+    def _load_model(cls, model_name: str, prefer_local_files: bool):
+        """Load cached model files first and minimize peak CPU memory usage."""
         if prefer_local_files:
             try:
                 tokenizer = AutoTokenizer.from_pretrained(
@@ -35,7 +69,7 @@ class RAGQAChain:
 
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name, low_cpu_mem_usage=True)
             return tokenizer, model
         except Exception as exc:
             raise RuntimeError(
@@ -62,6 +96,35 @@ class RAGQAChain:
         for index, context in enumerate(contexts):
             if remaining_tokens == 0:
                 break
+
+            separator = "\n\n" if context_excerpts else ""
+            label = f"[Source {index + 1}]\n"
+            header_tokens = self.tokenizer.encode(
+                separator + label,
+                add_special_tokens=False,
+            )
+            if len(header_tokens) >= remaining_tokens:
+                break
+
+            # Reserve a fair share of the remaining input window for each source
+            # so one long chunk cannot crowd all lower-ranked retrieved chunks out.
+            sources_left = len(contexts) - index
+            excerpt_budget = max(remaining_tokens // sources_left, 1)
+            excerpt_budget = max(excerpt_budget - len(header_tokens), 0)
+            context_tokens = self.tokenizer.encode(
+                context,
+                add_special_tokens=False,
+            )[:excerpt_budget]
+            if not context_tokens:
+                continue
+
+            excerpt = self.tokenizer.decode(
+                context_tokens,
+                skip_special_tokens=True,
+            ).strip()
+            if not excerpt:
+                continue
+
 
             separator = "\n\n" if context_excerpts else ""
             label = f"[Source {index + 1}]\n"

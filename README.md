@@ -125,6 +125,10 @@ Run the ingestion + embedding pipeline with different sources:
 python main.py --source json --query "What are termination conditions?"
 ```
 
+The first run generates and saves the CUAD embeddings. Later JSON-only queries and
+API startups reuse `data/embeddings/unified_embeddings.npy` and its metadata file
+instead of rebuilding the full index. Regenerate the index after changing the source
+documents with:
 The first run generates and saves the CUAD embeddings. Later JSON-only queries reuse
 `data/embeddings/unified_embeddings.npy` and its metadata file instead of rebuilding
 the full index. Regenerate the index after changing the source documents with:

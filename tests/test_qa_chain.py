@@ -37,6 +37,8 @@ def test_generate_answer_uses_seq2seq_generate(tokenizer_loader, model_loader):
         call("test-model", local_files_only=True),
     ]
     assert model_loader.call_args_list == [
+        call("test-model", local_files_only=True, low_cpu_mem_usage=True),
+    ]
         call("test-model", local_files_only=True),
     ]
     tokenizer_loader.assert_called_once_with("test-model", local_files_only=True)
@@ -113,6 +115,32 @@ def test_answer_model_downloads_when_not_cached(tokenizer_loader, model_loader):
         call("test-model", local_files_only=True),
         call("test-model"),
     ]
-    model_loader.assert_called_once_with("test-model")
+    model_loader.assert_called_once_with("test-model", low_cpu_mem_usage=True)
     assert qa_chain.tokenizer is tokenizer
     assert qa_chain.model is model
+
+
+@patch("src.llm.qa_chain.AutoModelForSeq2SeqLM.from_pretrained")
+@patch("src.llm.qa_chain.AutoTokenizer.from_pretrained")
+def test_answer_model_reports_windows_paging_file_error_without_online_retry(
+    tokenizer_loader,
+    model_loader,
+):
+    model_loader.side_effect = OSError(
+        "The paging file is too small for this operation to complete. (os error 1455)"
+    )
+
+    try:
+        RAGQAChain(model_name="test-model")
+    except RuntimeError as exc:
+        assert "Windows virtual memory is too low" in str(exc)
+        assert "LLM_MODEL=google/flan-t5-small" in str(exc)
+    else:
+        raise AssertionError("Expected a paging-file RuntimeError")
+
+    tokenizer_loader.assert_called_once_with("test-model", local_files_only=True)
+    model_loader.assert_called_once_with(
+        "test-model",
+        local_files_only=True,
+        low_cpu_mem_usage=True,
+    )

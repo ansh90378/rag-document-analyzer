@@ -97,6 +97,11 @@ python main.py --source pdf --pdf-path data/raw_docs/pdfs/your_file.pdf --query 
 - **Fix:** Check port 8000 is free, or use `--port 8001`
 
 ### Hugging Face download or DNS error
+- **Fix:** The first run needs internet access to download the embedding and answer models. Later CLI runs and API startups load cached model files first and reuse saved JSON embeddings. If source documents changed, rerun the CLI with `--rebuild-embeddings` after restoring internet access.
+
+### Windows paging-file error while loading FLAN-T5
+- **Cause:** Windows does not have enough available RAM and virtual memory to map the answer-model checkpoint.
+- **Fix:** Increase the Windows paging-file size, close memory-heavy applications, or add `LLM_MODEL=google/flan-t5-small` to `.env` to use the smaller answer model.
 - **Fix:** The first run needs internet access to download the embedding and answer models. Later runs load cached model files first and reuse saved JSON embeddings. If source documents changed, rerun with `--rebuild-embeddings` after restoring internet access.
 
 ### No answer generated
