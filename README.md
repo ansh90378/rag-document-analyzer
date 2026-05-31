@@ -120,9 +120,17 @@ pip install -r requirements.txt
 
 Run the ingestion + embedding pipeline with different sources:
 
-**Process CUAD JSON (default):**
+**Query CUAD JSON (default):**
 ```bash
 python main.py --source json --query "What are termination conditions?"
+```
+
+The first run generates and saves the CUAD embeddings. Later JSON-only queries reuse
+`data/embeddings/unified_embeddings.npy` and its metadata file instead of rebuilding
+the full index. Regenerate the index after changing the source documents with:
+
+```bash
+python main.py --source json --rebuild-embeddings --query "What are termination conditions?"
 ```
 
 **Process PDF file:**
@@ -145,11 +153,12 @@ python main.py --source both --pdf-path data/raw_docs/pdfs/ --query "What are th
 - `--pdf-path`: Path to PDF file or directory (required for PDF processing)
 - `--query`: Question to answer
 - `--top-k`: Number of top results to retrieve (default: 4)
+- `--rebuild-embeddings`: Regenerate embeddings instead of reusing a saved JSON index
 
 The pipeline will:
-- Load documents (CUAD and/or PDFs)
+- Load documents (CUAD and/or PDFs), unless a saved JSON index can be reused
 - Chunk documents
-- Generate embeddings
+- Generate embeddings when building or rebuilding an index
 - Store vectors in FAISS
 - Answer your query with source citations
 
@@ -377,6 +386,11 @@ ENABLE_CUAD_PRELOAD=true
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 EMBEDDINGS_FILE=unified_embeddings.npy
 METADATA_FILE=unified_metadata.json
+
+# LLM
+LLM_MODEL=google/flan-t5-base
+LLM_MAX_TOKENS=256
+LLM_MAX_INPUT_TOKENS=512
 
 # API
 API_HOST=0.0.0.0
